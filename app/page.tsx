@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from 'react'
+import Image from 'next/image'
 import { Camera, Upload, Wrench, CheckCircle, AlertCircle, Lightbulb, ShoppingCart, ArrowRight } from 'lucide-react'
 
 // Interface para os resultados
@@ -91,17 +92,16 @@ export default function HomemDaCasa() {
     <div className="min-h-screen font-sans selection:bg-click-primary selection:text-white">
       
       {/* Header - Identidade Click Fácil */}
-      <div className="bg-click-bg border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+      <header className="bg-click-bg border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
+        <div className="max-w-4xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {/* Ícone da Marca */}
-              <div className="relative group cursor-pointer">
-                <div className="absolute -inset-1 bg-click-primary blur opacity-25 rounded-lg group-hover:opacity-50 transition duration-200"></div>
-                <div className="relative p-2 bg-slate-900 border border-slate-800 rounded-lg">
-                  <Wrench className="w-6 h-6 text-click-primary" />
-                </div>
-              </div>
+              <Image
+                src="/logo.png"
+                alt="Logo Click Fácil"
+                width={40}
+                height={40}
+              />
               <div>
                 <p className="text-[10px] font-bold tracking-widest text-click-primary uppercase mb-0.5">
                   Click Fácil Apresenta
@@ -111,7 +111,7 @@ export default function HomemDaCasa() {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         
