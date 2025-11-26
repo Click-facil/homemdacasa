@@ -48,58 +48,25 @@ export default function HomemDaCasa() {
     setError(null)
 
     try {
-      // --- SIMULAÇÃO DE IA ---
-      // No futuro, aqui você enviaria a `imagem` e a `problemDescription` para uma IA de verdade.
-      // Por agora, vamos simular respostas diferentes baseadas no texto do usuário.
-      await new Promise(resolve => setTimeout(resolve, 2500))
-      
-      let mockAnalysis: AnalysisResult;
+      // --- CHAMADA REAL PARA A IA ---
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          image: preview, // A string base64 da imagem
+          description: problemDescription,
+        }),
+      });
 
-      // Simula uma resposta diferente se o usuário digitar "chuveiro"
-      if (problemDescription.toLowerCase().includes('chuveiro')) {
-        mockAnalysis = {
-          problem: "Troca de resistência de chuveiro elétrico",
-          difficulty: "Médio",
-          tools: ["Chave de fenda", "Alicate"],
-          materials: ["Resistência nova (compatível com o modelo)"],
-          steps: [
-            "DESLIGUE O DISJUNTOR do chuveiro no quadro de força. É MUITO IMPORTANTE!",
-            "Abra a tampa do chuveiro, geralmente girando no sentido anti-horário.",
-            "Retire a resistência queimada com cuidado, observando a posição dos conectores.",
-            "Encaixe a nova resistência exatamente na mesma posição da antiga.",
-            "Feche a tampa do chuveiro e aperte bem.",
-            "Deixe a água fria correr por alguns segundos antes de ligar o disjuntor.",
-            "Ligue o disjuntor e teste o aquecimento da água."
-          ],
-          tips: ["Verifique a voltagem (110V/220V) da resistência antes de comprar.", "Se não tiver certeza, chame um eletricista."],
-          estimatedTime: "20-30 minutos",
-          estimatedCost: "R$ 20-40"
-        }
-      } else {
-        // Resposta padrão (vazamento)
-        mockAnalysis = {
-          problem: "Vazamento em torneira da cozinha",
-          difficulty: "Fácil",
-          tools: ["Chave inglesa", "Alicate de pressão"],
-          materials: ["Vedação de borracha (reparo)", "Fita veda rosca"],
-          steps: [
-            "Feche o registro geral de água da cozinha ou da casa.",
-            "Abra a torneira para retirar a água restante.",
-            "Use a chave inglesa para soltar a porca que prende a torneira.",
-            "Substitua o reparo (vedação de borracha) gasto por um novo.",
-            "Passe fita veda rosca na rosca da torneira antes de montar.",
-            "Remonte a torneira, abra o registro e verifique se o vazamento parou."
-          ],
-          tips: [
-            "Tire uma foto do reparo antigo para comprar um igual.",
-            "Use um pano entre a chave e a torneira para não arranhar o metal."
-          ],
-          estimatedTime: "30-45 minutos",
-          estimatedCost: "R$ 15-25"
-        }
+      if (!response.ok) {
+        throw new Error('A resposta da API não foi bem-sucedida.');
       }
 
-      setAnalysis(mockAnalysis)
+      const result: AnalysisResult = await response.json();
+      setAnalysis(result);
+
     } catch (err) {
       setError("Não foi possível analisar a imagem. Tente novamente.")
     } finally {
