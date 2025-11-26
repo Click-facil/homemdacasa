@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useRef } from 'react'
-import Image from 'next/image'
-import { Camera, Upload, Wrench, CheckCircle, AlertCircle, Lightbulb, ShoppingCart, ArrowRight } from 'lucide-react'
+import Image from 'next/image';
+import { Camera, Upload, Wrench, CheckCircle, AlertCircle, Lightbulb, ShoppingCart, ArrowRight, MessageSquare } from 'lucide-react'
 
 // Interface para os resultados
 interface AnalysisResult {
@@ -19,6 +19,7 @@ interface AnalysisResult {
 export default function HomemDaCasa() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
+  const [problemDescription, setProblemDescription] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -30,6 +31,7 @@ export default function HomemDaCasa() {
       setSelectedFile(file)
       setError(null)
       setAnalysis(null)
+      setProblemDescription('') // Limpa a descrição ao selecionar nova foto
       
       const reader = new FileReader()
       reader.onload = (e) => {
@@ -46,29 +48,55 @@ export default function HomemDaCasa() {
     setError(null)
 
     try {
-      // Simulação (depois colocamos a IA real)
+      // --- SIMULAÇÃO DE IA ---
+      // No futuro, aqui você enviaria a `imagem` e a `problemDescription` para uma IA de verdade.
+      // Por agora, vamos simular respostas diferentes baseadas no texto do usuário.
       await new Promise(resolve => setTimeout(resolve, 2500))
       
-      const mockAnalysis: AnalysisResult = {
-        problem: "Vazamento em torneira da cozinha",
-        difficulty: "Fácil",
-        tools: ["Chave inglesa", "Alicate de pressão", "Chave de fenda"],
-        materials: ["Vedação de borracha", "Fita veda rosca", "Graxa"],
-        steps: [
-          "Feche o registro geral da água imediatamente.",
-          "Desmonte a torneira removendo o parafuso superior.",
-          "Retire a vedação antiga e limpe a superfície.",
-          "Aplique a nova vedação com um pouco de graxa.",
-          "Remonte a torneira apertando firmemente.",
-          "Abra o registro e teste o fluxo de água."
-        ],
-        tips: [
-          "Sempre feche o registro antes de começar.",
-          "Use um pano para não arranhar o metal da torneira com a chave.",
-          "Guarde as peças pequenas em um pote."
-        ],
-        estimatedTime: "30-45 minutos",
-        estimatedCost: "R$ 15-25"
+      let mockAnalysis: AnalysisResult;
+
+      // Simula uma resposta diferente se o usuário digitar "chuveiro"
+      if (problemDescription.toLowerCase().includes('chuveiro')) {
+        mockAnalysis = {
+          problem: "Troca de resistência de chuveiro elétrico",
+          difficulty: "Médio",
+          tools: ["Chave de fenda", "Alicate"],
+          materials: ["Resistência nova (compatível com o modelo)"],
+          steps: [
+            "DESLIGUE O DISJUNTOR do chuveiro no quadro de força. É MUITO IMPORTANTE!",
+            "Abra a tampa do chuveiro, geralmente girando no sentido anti-horário.",
+            "Retire a resistência queimada com cuidado, observando a posição dos conectores.",
+            "Encaixe a nova resistência exatamente na mesma posição da antiga.",
+            "Feche a tampa do chuveiro e aperte bem.",
+            "Deixe a água fria correr por alguns segundos antes de ligar o disjuntor.",
+            "Ligue o disjuntor e teste o aquecimento da água."
+          ],
+          tips: ["Verifique a voltagem (110V/220V) da resistência antes de comprar.", "Se não tiver certeza, chame um eletricista."],
+          estimatedTime: "20-30 minutos",
+          estimatedCost: "R$ 20-40"
+        }
+      } else {
+        // Resposta padrão (vazamento)
+        mockAnalysis = {
+          problem: "Vazamento em torneira da cozinha",
+          difficulty: "Fácil",
+          tools: ["Chave inglesa", "Alicate de pressão"],
+          materials: ["Vedação de borracha (reparo)", "Fita veda rosca"],
+          steps: [
+            "Feche o registro geral de água da cozinha ou da casa.",
+            "Abra a torneira para retirar a água restante.",
+            "Use a chave inglesa para soltar a porca que prende a torneira.",
+            "Substitua o reparo (vedação de borracha) gasto por um novo.",
+            "Passe fita veda rosca na rosca da torneira antes de montar.",
+            "Remonte a torneira, abra o registro e verifique se o vazamento parou."
+          ],
+          tips: [
+            "Tire uma foto do reparo antigo para comprar um igual.",
+            "Use um pano entre a chave e a torneira para não arranhar o metal."
+          ],
+          estimatedTime: "30-45 minutos",
+          estimatedCost: "R$ 15-25"
+        }
       }
 
       setAnalysis(mockAnalysis)
@@ -148,6 +176,22 @@ export default function HomemDaCasa() {
                   </button>
                 </div>
                 
+                {/* NOVO: Campo de texto para descrição */}
+                <div className="space-y-2 text-left pt-4">
+                  <label htmlFor="problem-description" className="flex items-center gap-2 text-sm font-medium text-click-muted">
+                    <MessageSquare className="w-4 h-4" />
+                    Descreva o problema (opcional):
+                  </label>
+                  <textarea
+                    id="problem-description"
+                    value={problemDescription}
+                    onChange={(e) => setProblemDescription(e.target.value)}
+                    placeholder="Ex: 'Meu chuveiro não está esquentando' ou 'A torneira está pingando'"
+                    className="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-lg text-white placeholder:text-slate-500 focus:ring-2 focus:ring-click-primary focus:border-click-primary transition-colors"
+                    rows={2}
+                  />
+                </div>
+
                 <div className="flex justify-center">
                   <button
                     onClick={analyzeImage}
@@ -319,7 +363,7 @@ export default function HomemDaCasa() {
             
             <div className="text-center pt-8 pb-12">
                <button 
-                onClick={() => {setAnalysis(null); setPreview(null); setSelectedFile(null)}}
+                onClick={() => {setAnalysis(null); setPreview(null); setSelectedFile(null); setProblemDescription('')}}
                 className="text-click-muted hover:text-white transition-colors text-sm hover:underline py-2 px-4"
                >
                  Fazer Nova Análise
