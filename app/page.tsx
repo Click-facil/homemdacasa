@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useRef } from 'react'
-import Image from 'next/image';
 import { Camera, Upload, Wrench, CheckCircle, AlertCircle, Lightbulb, ShoppingCart, ArrowRight, MessageSquare } from 'lucide-react'
 
 // Interface para os resultados
@@ -19,7 +18,7 @@ interface AnalysisResult {
 export default function HomemDaCasa() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
-  const [problemDescription, setProblemDescription] = useState('')
+  const [description, setDescription] = useState('') // Novo estado para o texto
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -31,7 +30,6 @@ export default function HomemDaCasa() {
       setSelectedFile(file)
       setError(null)
       setAnalysis(null)
-      setProblemDescription('') // Limpa a descrição ao selecionar nova foto
       
       const reader = new FileReader()
       reader.onload = (e) => {
@@ -42,33 +40,43 @@ export default function HomemDaCasa() {
   }
 
   const analyzeImage = async () => {
-    if (!selectedFile || !preview) return
+    // Validação: precisa ter foto OU descrição
+    if (!preview && !description) {
+        setError("Por favor, envie uma foto ou descreva o problema.")
+        return
+    }
 
     setIsAnalyzing(true)
     setError(null)
 
     try {
-      // --- CHAMADA REAL PARA A IA ---
+      // Prepara os dados
+      const payload = {
+        image: preview, 
+        description: description 
+      }
+
+      // CHAMA A SUA API (O arquivo route.ts)
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          image: preview, // A string base64 da imagem
-          description: problemDescription,
-        }),
-      });
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
 
       if (!response.ok) {
-        throw new Error('A resposta da API não foi bem-sucedida.');
+        throw new Error(data.error || 'Falha na comunicação com a IA')
       }
-
-      const result: AnalysisResult = await response.json();
-      setAnalysis(result);
+      
+      // Salva a resposta REAL da IA
+      setAnalysis(data)
 
     } catch (err) {
-      setError("Não foi possível analisar a imagem. Tente novamente.")
+      console.error(err)
+      setError("Erro ao analisar. Verifique sua conexão e a chave de API.")
     } finally {
       setIsAnalyzing(false)
     }
@@ -76,27 +84,27 @@ export default function HomemDaCasa() {
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'Fácil': return 'text-click-cta bg-click-cta/10 border-click-cta/20'
-      case 'Médio': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20' // Amarelo pode ser mantido para alerta
-      case 'Difícil': return 'text-red-400 bg-red-400/10 border-red-400/20'       // Vermelho pode ser mantido para perigo
-      default: return 'text-click-muted bg-click-muted/10'
+      case 'Fácil': return 'text-green-400 bg-green-400/10 border-green-400/20'
+      case 'Médio': return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20'
+      case 'Difícil': return 'text-red-400 bg-red-400/10 border-red-400/20'
+      default: return 'text-gray-400 bg-gray-400/10'
     }
   }
 
   return (
-    <div className="min-h-screen font-sans selection:bg-click-primary selection:text-white">
+    <div className="min-h-screen font-sans selection:bg-click-primary selection:text-white pb-10">
       
       {/* Header - Identidade Click Fácil */}
-      <header className="bg-click-bg border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
-        <div className="max-w-4xl mx-auto px-4 py-3">
+      <div className="bg-click-bg border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
+        <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Image
-                src="/logo.png"
-                alt="Logo Click Fácil"
-                width={40}
-                height={40}
-              />
+              <div className="relative group cursor-pointer">
+                <div className="absolute -inset-1 bg-click-primary blur opacity-25 rounded-lg group-hover:opacity-50 transition duration-200"></div>
+                <div className="relative p-2 bg-slate-900 border border-slate-800 rounded-lg">
+                  <Wrench className="w-6 h-6 text-click-primary" />
+                </div>
+              </div>
               <div>
                 <p className="text-[10px] font-bold tracking-widest text-click-primary uppercase mb-0.5">
                   Click Fácil Apresenta
@@ -106,11 +114,10 @@ export default function HomemDaCasa() {
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         
-        {/* Intro Section */}
         {!analysis && !preview && (
           <div className="text-center mb-12 py-12 animate-in fade-in slide-in-from-bottom-4 duration-1000">
             <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white tracking-tight">
@@ -122,9 +129,10 @@ export default function HomemDaCasa() {
           </div>
         )}
 
-        {/* Upload Area */}
+        {/* Área de Upload e Descrição */}
         <div className="bg-click-card border border-slate-800 rounded-2xl p-6 mb-8 shadow-2xl shadow-black/50 overflow-hidden relative">
           
+          {/* Box da Imagem */}
           <div className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 ${preview ? 'border-click-primary/50 bg-click-bg/50' : 'border-slate-700 hover:border-click-primary/50 hover:bg-slate-900/50'}`}>
             
             {preview ? (
@@ -142,45 +150,9 @@ export default function HomemDaCasa() {
                     <Upload className="w-4 h-4" />
                   </button>
                 </div>
-                
-                {/* NOVO: Campo de texto para descrição */}
-                <div className="space-y-2 text-left pt-4">
-                  <label htmlFor="problem-description" className="flex items-center gap-2 text-sm font-medium text-click-muted">
-                    <MessageSquare className="w-4 h-4" />
-                    Descreva o problema (opcional):
-                  </label>
-                  <textarea
-                    id="problem-description"
-                    value={problemDescription}
-                    onChange={(e) => setProblemDescription(e.target.value)}
-                    placeholder="Ex: 'Meu chuveiro não está esquentando' ou 'A torneira está pingando'"
-                    className="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-lg text-white placeholder:text-slate-500 focus:ring-2 focus:ring-click-primary focus:border-click-primary transition-colors"
-                    rows={2}
-                  />
-                </div>
-
-                <div className="flex justify-center">
-                  <button
-                    onClick={analyzeImage}
-                    disabled={isAnalyzing}
-                    className="px-8 py-4 bg-click-cta text-white font-bold rounded-xl hover:bg-click-ctaHover transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 shadow-lg shadow-green-500/20 hover:shadow-green-500/40 w-full md:w-auto justify-center transform hover:-translate-y-1"
-                  >
-                    {isAnalyzing ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Processando Imagem...
-                      </>
-                    ) : (
-                      <>
-                        <Lightbulb className="w-5 h-5" />
-                        Identificar Solução Agora
-                      </>
-                    )}
-                  </button>
-                </div>
               </div>
             ) : (
-              <div className="space-y-6 py-10 cursor-pointer group" onClick={() => fileInputRef.current?.click()}>
+              <div className="space-y-6 py-6 cursor-pointer group" onClick={() => fileInputRef.current?.click()}>
                 <div className="flex justify-center">
                   <div className="p-5 bg-slate-900 rounded-2xl border border-slate-800 group-hover:border-click-primary/50 group-hover:bg-slate-800 transition-all duration-300 shadow-xl">
                     <Camera className="w-10 h-10 text-click-primary group-hover:scale-110 transition-transform duration-300" />
@@ -190,12 +162,9 @@ export default function HomemDaCasa() {
                   <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-click-primary transition-colors">
                     Tire uma foto ou carregue um vídeo
                   </h3>
-                  <p className="text-click-muted text-sm mb-8">
-                    Suportamos JPG, PNG e MP4
+                  <p className="text-click-muted text-sm">
+                    Toque para selecionar
                   </p>
-                  <span className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-slate-800 text-white font-medium group-hover:bg-click-primary group-hover:text-white transition-all duration-300">
-                    Selecionar Arquivo <ArrowRight className="w-4 h-4" />
-                  </span>
                 </div>
               </div>
             )}
@@ -207,9 +176,44 @@ export default function HomemDaCasa() {
             onChange={handleFileSelect}
             className="hidden"
           />
+
+          {/* NOVO: Área de Texto (Opcional) */}
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-click-muted mb-2 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-click-primary" />
+                Descreva o problema (opcional):
+            </label>
+            <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder:text-slate-600 focus:ring-1 focus:ring-click-primary focus:border-click-primary outline-none resize-none h-24 transition-all"
+                placeholder="Ex: A lâmpada pisca mas não acende, ou o bocal parece solto..."
+            />
+          </div>
+
+          {/* Botão de Ação */}
+          <div className="mt-6 flex justify-center">
+            <button
+                onClick={analyzeImage}
+                disabled={isAnalyzing || (!preview && !description)}
+                className="px-8 py-4 bg-click-cta text-white font-bold rounded-xl hover:bg-click-ctaHover transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 shadow-lg shadow-green-500/20 hover:shadow-green-500/40 w-full md:w-auto justify-center transform hover:-translate-y-1"
+            >
+                {isAnalyzing ? (
+                    <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Processando...
+                    </>
+                ) : (
+                    <>
+                    <Lightbulb className="w-5 h-5" />
+                    Identificar Solução Agora
+                    </>
+                )}
+            </button>
+          </div>
+
         </div>
 
-        {/* Error Message */}
         {error && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6 flex items-center gap-3 text-red-400 animate-in fade-in slide-in-from-top-2">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
@@ -217,11 +221,10 @@ export default function HomemDaCasa() {
           </div>
         )}
 
-        {/* Results Section */}
+        {/* Resultados (Analysis) */}
         {analysis && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
             
-            {/* Main Result Card */}
             <div className="bg-click-card border border-slate-800 rounded-2xl p-6 md:p-8 shadow-xl relative overflow-hidden">
                <div className="absolute top-0 right-0 w-32 h-32 bg-click-primary/10 blur-3xl rounded-full pointer-events-none"></div>
                
@@ -251,9 +254,7 @@ export default function HomemDaCasa() {
               </div>
             </div>
 
-            {/* Tools & Materials Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Tools */}
               <div className="bg-click-card border border-slate-800 rounded-2xl p-6 md:p-8 hover:border-slate-700 transition-colors">
                 <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
                   <div className="p-2 bg-click-primary/10 rounded-lg">
@@ -271,7 +272,6 @@ export default function HomemDaCasa() {
                 </ul>
               </div>
 
-              {/* Materials */}
               <div className="bg-click-card border border-slate-800 rounded-2xl p-6 md:p-8 hover:border-slate-700 transition-colors">
                 <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
                   <div className="p-2 bg-click-cta/10 rounded-lg">
@@ -290,13 +290,11 @@ export default function HomemDaCasa() {
               </div>
             </div>
 
-            {/* Steps */}
             <div className="bg-click-card border border-slate-800 rounded-2xl p-6 md:p-8">
               <h3 className="text-xl font-bold text-white mb-8">Passo a Passo Detalhado</h3>
               <div className="space-y-8">
                 {analysis.steps.map((step, index) => (
                   <div key={index} className="flex gap-4 group relative">
-                    {/* Linha conectora vertical */}
                     {index !== analysis.steps.length - 1 && (
                       <div className="absolute left-[19px] top-10 bottom-0 w-0.5 bg-slate-800 group-hover:bg-slate-700 transition-colors -mb-8"></div>
                     )}
@@ -312,7 +310,6 @@ export default function HomemDaCasa() {
               </div>
             </div>
 
-            {/* Tips */}
             <div className="bg-gradient-to-r from-yellow-900/10 to-orange-900/10 border border-yellow-700/20 rounded-2xl p-6 md:p-8 backdrop-blur-sm">
               <h3 className="text-lg font-bold text-yellow-500 mb-6 flex items-center gap-3">
                 <Lightbulb className="w-6 h-6" />
@@ -330,7 +327,7 @@ export default function HomemDaCasa() {
             
             <div className="text-center pt-8 pb-12">
                <button 
-                onClick={() => {setAnalysis(null); setPreview(null); setSelectedFile(null); setProblemDescription('')}}
+                onClick={() => {setAnalysis(null); setPreview(null); setSelectedFile(null); setDescription('')}}
                 className="text-click-muted hover:text-white transition-colors text-sm hover:underline py-2 px-4"
                >
                  Fazer Nova Análise
